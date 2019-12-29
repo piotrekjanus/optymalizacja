@@ -6,6 +6,11 @@ import pandas as pd
 # Regularization for matrix inverting
 MAT_REG = 1e-12
 
+def plot_path(beta_path):
+    sum_abs_coeff = np.sum(np.abs(beta_path), 1)
+    plt.plot(sum_abs_coeff, beta_path)
+    plt.show()
+
 def update_save(history):
     #TODO
     pass
@@ -156,7 +161,7 @@ def lars(x, y):
     d = pd.DataFrame(np.round(history["beta"], 2).reshape((11, 10)))
     print(d)
 
-    return history["beta"], x, y
+    return np.squeeze(history["beta"])
         
 if __name__ == "__main__":
     x, y = load_diabetes(return_X_y = True)
@@ -164,28 +169,5 @@ if __name__ == "__main__":
     # x = scaler.transform(x)
     y = y.reshape((-1,1))
     # y = StandardScaler().fit_transform(y)
-    print("Our results")
-    lars(x, y) 
-
-    from sklearn import linear_model
-    lar = linear_model.Lars()
-    model = lar.fit(x,y)
-    print("Final coeff using Python implementation")
-    print(model.coef_)
-    print("(same as using R)")
-
-# R output from lars(x, y)
-# can be compared with our results
-
-#         age        sex       bmi       map        tc       ldl       hdl      tch      ltg      glu
-# 0    0.0000    0.00000   0.00000   0.00000    0.0000   0.00000    0.0000   0.0000   0.0000  0.00000
-# 1    0.0000    0.00000  60.11927   0.00000    0.0000   0.00000    0.0000   0.0000   0.0000  0.00000
-# 2    0.0000    0.00000 361.89461   0.00000    0.0000   0.00000    0.0000   0.0000 301.7753  0.00000
-# 3    0.0000    0.00000 434.75796  79.23645    0.0000   0.00000    0.0000   0.0000 374.9158  0.00000
-# 4    0.0000    0.00000 505.65956 191.26988    0.0000   0.00000 -114.1010   0.0000 439.6649  0.00000
-# 5    0.0000  -74.91651 511.34807 234.15462    0.0000   0.00000 -169.7114   0.0000 450.6674  0.00000
-# 6    0.0000 -111.97855 512.04409 252.52702    0.0000   0.00000 -196.0454   0.0000 452.3927 12.07815
-# 7    0.0000 -197.75650 522.26485 297.15974 -103.9462   0.00000 -223.9260   0.0000 514.7495 54.76768
-# 8    0.0000 -226.13366 526.88547 314.38927 -195.1058   0.00000 -152.4773 106.3428 529.9160 64.48742
-# 9    0.0000 -227.17580 526.39059 314.95047 -237.3410  33.62827 -134.5994 111.3841 545.4826 64.60667
-# 10 -10.0122 -239.81909 519.83979 324.39043 -792.1842 476.74584  101.0446 177.0642 751.2793 67.62539
+    beta_path = lars(x, y) 
+    plot_path(beta_path)
