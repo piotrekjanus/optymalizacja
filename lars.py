@@ -86,14 +86,15 @@ def lars(x, y):
         # eq. 2.9 
         # active set A is the set of indices
         # corresponding to covariates with the greatest absolute current correlations
-        active_set = np.sort(np.append(active_set, c_max_ind)).astype(dtype = np.int16)
+        active_set = np.append(active_set, c_max_ind).astype(dtype = np.int16)
         inactive_set = np.setdiff1d(possible_var, active_set)
         
         # eq. 2.10
         s = np.sign(c[active_set])
 
         # eq. 2.4 
-        xa = x[:, active_set] * np.repeat(s, n).reshape((n, len(active_set)))
+        xa = x[:, active_set] 
+        xa *= s.reshape(-1)
         
         # eq. 2.5
         ga = xa.T.dot(xa)
@@ -151,7 +152,7 @@ def lars(x, y):
         history["mse"] = history["mse"] + [MSE]
         history["beta"] = history["beta"] + [beta] 
         i += 1
-    # print(history["mse"])
+    print(history["mse"])
     d = pd.DataFrame(np.round(history["beta"], 2).reshape((11, 10)))
     print(d)
 
