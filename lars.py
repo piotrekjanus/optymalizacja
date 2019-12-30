@@ -19,11 +19,13 @@ def update_save(history):
 
 def check_stop_criterions(params):
     force_stop = False
-    if np.abs(params["c_max"][-1] / params["Aa"][-1] - np.min([params["gamma"][-1], params["gamma_tilde"][-1]])) < LARS_RES:
-        print("Exact matching")
-        force_stop = True
+    # if np.abs(params["c_max"][-1] / params["Aa"][-1] - np.min([params["gamma"][-1], params["gamma_tilde"][-1]])) < LARS_RES:
+    #     print("Exact matching")
+    #     force_stop = True
     if params["mse"][-1] > params["mse"][-2]:
         print("MSE increased")
+        force_stop = True
+    if len(params["inactive_set"][-1]) == 0: 
         force_stop = True
     return force_stop
 
@@ -55,7 +57,7 @@ def lars(x, y, alg_type = "lars"):
     inactive_set = np.where(var_col > 0)
 
     # Suppose that µA is the current LARS estimate 
-    mu_a = np.zeros((n,1))
+    mu_a = np.zeros((n, 1))
        
     beta = np.zeros((x.shape[1], 1))
     
@@ -67,6 +69,7 @@ def lars(x, y, alg_type = "lars"):
     
     history["beta"] = [np.zeros((m, 1))]
     history["mse"] = [np.power(res, 2).mean()]
+    history["inactive_set"] = [inactive_set]
     
     c = 0
     
@@ -164,7 +167,7 @@ def lars(x, y, alg_type = "lars"):
             # eq 3.5
             gamma_tilde = np.min(tmp2)
             # eq 3.6 
-            drop = np.where(tmp == gamma_tilde)
+            drop, _ = np.where(tmp == gamma_tilde)
             
         if alg_type == 'lars':
             mu_a_ = mu_a + gamma * ua
@@ -194,6 +197,8 @@ def lars(x, y, alg_type = "lars"):
         history["gamma_tilde"] = history["gamma_tilde"] + [gamma]
         history["Aa"] = history["Aa"] + [Aa]
         history["c_max"] = history["c_max"] + [c_max]
+        history["inactive_set"] = [inactive_set]
+
         i += 1
         if check_stop_criterions(history):
             break
