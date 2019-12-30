@@ -9,6 +9,7 @@ MAT_REG = 1e-12
 LARS_RES = 1e-12
 
 def plot_path(beta_path):
+    plt.style.use('ggplot')
     sum_abs_coeff = np.sum(np.abs(beta_path), 1)
     plt.plot(sum_abs_coeff, beta_path)
     _, xmax, _, ymax = plt.axis()
@@ -207,11 +208,11 @@ def lars(x, y, alg_type = "lars"):
         if check_stop_criterions(history):
             break
 
-    print(history["mse"])
+    # print(history["mse"])
     d = pd.DataFrame(np.round(history["beta"], 2).reshape((i+1, 10)))
-    print(d)
+    # print(d)
 
-    return np.squeeze(history["beta"])
+    return np.squeeze(d)
         
 if __name__ == "__main__":
     x, y = load_diabetes(return_X_y = True)
