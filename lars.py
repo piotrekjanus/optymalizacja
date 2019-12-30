@@ -11,6 +11,10 @@ LARS_RES = 1e-12
 def plot_path(beta_path):
     sum_abs_coeff = np.sum(np.abs(beta_path), 1)
     plt.plot(sum_abs_coeff, beta_path)
+    _, xmax, _, ymax = plt.axis()
+    for i,coeff in enumerate(sum_abs_coeff):
+        plt.axvline(x=coeff, linewidth=0.4, linestyle='--')
+        plt.text(coeff-0.005*xmax, ymax,'{}'.format(i), fontsize=5)
     plt.show()
 
 def update_save(history):
@@ -215,7 +219,7 @@ if __name__ == "__main__":
     # x = scaler.transform(x)
     y = y.reshape((-1,1))
     # y = StandardScaler().fit_transform(y)
-    # beta_path = lars(x, y, 'lars') 
-    # plot_path(beta_path)
+    beta_path = lars(x, y, 'lars') 
+    plot_path(beta_path)
     beta_path = lars(x, y, 'lasso')
     plot_path(beta_path)
