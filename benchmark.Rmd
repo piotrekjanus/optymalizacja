@@ -23,27 +23,100 @@ import numpy as np
 from sklearn.datasets import load_diabetes
 import matplotlib.pyplot as plt
 import pandas as pd
+import time
 x, y = load_diabetes(return_X_y = True)
 y = y.reshape((-1,1))
-beta_path = lars(x, y, 'lars') 
+beta_path = lars(x, y, "lars")
 ```
+
+## Diabetycy
 
 ```{python, warnings=FALSE, echo=FALSE}
 plot_path(beta_path)
 ```
 
+```{python, echo = FALSE}
+times = []
+for i in range(100):
+    start = time.time()
+    beta_path = lars(x, y, 'lars') 
+    end = time.time()
+    times.append(end-start)
+
+```
+
 ```{r message=FALSE, warnings=FALSE, echo=FALSE}
 library(dplyr)
+summary(py$times)
 DT::datatable(py$beta_path %>% data.frame())
 ```
 
 
+
 ```{r, echo=FALSE}
+library(microbenchmark)
+microbenchmark::microbenchmark(lars(x,y, "lar"), unit = "s")
 object <- lars(x,y, "lar")$beta
 DT::datatable(lars(x,y, "lar")$beta)
 ```
 
 ```{python, echo=FALSE}
-print(r.object$beta)
+plot_path(r.object)
 ```
 
+## Dane 280 zmiennych 
+
+```{r message=FALSE, warnings=FALSE, echo=FALSE}
+data <- read.csv("blogData_train.csv", header = F)
+blog_x <- data[,1:280]
+blog_y <- data[,281]
+
+obj <- lars(as.matrix(blog_x), blog_y, 'lar', use.Gram = T)
+val <- obj$beta
+```
+
+
+```{python}
+blog_x = np.array(r.blog_x)
+blog_y = np.array(r.blog_y).reshape((-1,1))
+bet = lars(blog_x, blog_y, "lars")
+```
+
+```{python}
+plot_path(r.val)
+```
+
+```{python}
+plot_path(bet)
+```
+
+## Dane 180 zmiennych
+
+```{r message=FALSE, warnings=FALSE, echo=FALSE}
+data <- read.delim("tracks.txt", sep = ",", header = F)
+d_x <- data[,1:116]
+d_y <- data[,118]
+obj <- lars(as.matrix(d_x), d_y, 'lar', use.Gram = F, trace = F)
+val <- obj$beta
+```
+
+```{python}
+plot_path(r.val)
+```
+
+```{python}
+d_x = np.array(r.d_x)
+d_y = np.array(r.d_y).reshape((-1,1))
+bet = lars(d_x, d_y, "lars")
+
+```
+
+
+```{python}
+plot_path(bet)
+```
+
+```{r message=FALSE, warnings=FALSE, echo=FALSE}
+sum(val[nrow(val),] == 0)
+sum(py$bet[nrow(py$bet),] == 0)
+```

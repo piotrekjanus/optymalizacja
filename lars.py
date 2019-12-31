@@ -7,6 +7,7 @@ import pandas as pd
 MAT_REG = 1e-12
 # Resolution for Lars
 LARS_RES = 1e-12
+eps = 1e-7
 
 def plot_path(beta_path):
     plt.style.use('ggplot')
@@ -32,10 +33,12 @@ def check_stop_criterions(params):
         force_stop = True
     if len(params["inactive_set"][-1]) == 0: 
         force_stop = True
+    if len(np.setdiff1d(params["inactive_set"][-1], params["ignored_set"][-1])) == 0:
+        force_stop = True
     return force_stop
 
 
-def lars(x, y, alg_type = "lars"):
+def lars(x, y, alg_type = "lars", verbose=False):
 
     assert x is not None, "x should not be empty"
     assert y is not None, "y should not be empty"
@@ -58,8 +61,9 @@ def lars(x, y, alg_type = "lars"):
     active_set = []
     
     # set of indexes
-    possible_var = np.where(var_col > 0)
-    inactive_set = np.where(var_col > 0)
+    possible_var = np.where(var_col > eps)
+    inactive_set = np.where(var_col > eps)
+    ignored_set = []
 
     # Suppose that µA is the current LARS estimate 
     mu_a = np.zeros((n, 1))
@@ -75,7 +79,7 @@ def lars(x, y, alg_type = "lars"):
     history["beta"] = [np.zeros((m, 1))]
     history["mse"] = [np.power(res, 2).mean()]
     history["inactive_set"] = [inactive_set]
-    
+    history["ignored_set"] = [ignored_set]
     c = 0
     
     # max(abs(c))
@@ -85,15 +89,23 @@ def lars(x, y, alg_type = "lars"):
     drop = []  
 
     i = 0
-    while i<12:
-        
+    while True:
+        if verbose:
+            print("Iteration {}".format(i))
         # eq. 2.8
         # vector of current correlations
         c = x.T.dot(res - mu_a)
 
         # eq. 2.9
-        c_max_temp = np.max(np.abs(c[inactive_set]))
-        c_max, c_max_ind = c_max_temp, np.where(np.abs(c) == c_max_temp)[0]
+        c_max_temp = np.max(np.abs(c[np.setdiff1d(inactive_set, ignored_set)]))
+        c_max, c_max_ind = c_max_temp, np.where(np.abs(c) + eps >= c_max_temp)[0]
+        c_max_ind = np.setdiff1d(c_max_ind, ignored_set)
+        if len(c_max_ind) > 1:
+            c_max_ind = np.setdiff1d(c_max_ind, active_set)
+            ignored_set.extend(c_max_ind[1:])
+            if verbose:
+                print("dropping" + str(c_max_ind[1:]))
+            c_max_ind = c_max_ind[0]
 
         # eq. 2.9 
         # active set A is the set of indices
@@ -137,8 +149,8 @@ def lars(x, y, alg_type = "lars"):
         ua = xa.dot(wa)
 
         # check conditions that ua is well defined 
-        assert np.all(xa.T.dot(ua) > (Aa*np.ones((1, n)) - xa.T.dot(ua) * 0.01)), "Not working for iteration {}".format(i)
-        assert np.all(xa.T.dot(ua) < (Aa*np.ones((1, n)) + xa.T.dot(ua) * 0.01)), "Not working for iteration {}".format(i)
+        # assert np.all(xa.T.dot(ua) > (Aa*np.ones((1, n)) - xa.T.dot(ua) * 0.05)), "Not working for iteration {}".format(i)
+        # assert np.all(xa.T.dot(ua) < (Aa*np.ones((1, n)) + xa.T.dot(ua) * 0.05)), "Not working for iteration {}".format(i)
         assert np.linalg.norm(ua, 2) >  0.999, "Not working for iteration {}".format(i)
         assert np.linalg.norm(ua, 2) <  1.001, "Not working for iteration {}".format(i)
 
@@ -203,24 +215,30 @@ def lars(x, y, alg_type = "lars"):
         history["Aa"] = history["Aa"] + [Aa]
         history["c_max"] = history["c_max"] + [c_max]
         history["inactive_set"] = [inactive_set]
+        history["ignored_set"] = [ignored_set]
 
         i += 1
         if check_stop_criterions(history):
             break
 
     # print(history["mse"])
-    d = pd.DataFrame(np.round(history["beta"], 2).reshape((i+1, 10)))
+    d = pd.DataFrame(np.round(history["beta"], 2).reshape((i+1, m)))
     # print(d)
 
     return np.squeeze(d)
         
 if __name__ == "__main__":
-    x, y = load_diabetes(return_X_y = True)
+    # x, y = load_diabetes(return_X_y = True)
     # scaler = StandardScaler().fit(x)
     # x = scaler.transform(x)
-    y = y.reshape((-1,1))
+    # y = y.reshape((-1,1))
     # y = StandardScaler().fit_transform(y)
+    data = pd.read_csv("tracks.txt", header=None)
+    print(data.shape)
+    x = data.iloc[:,0:116].to_numpy()
+    y  = data.iloc[:,117].to_numpy()
+    y = y.reshape((-1,1))
     beta_path = lars(x, y, 'lars') 
     plot_path(beta_path)
-    beta_path = lars(x, y, 'lasso')
-    plot_path(beta_path)
+    # beta_path = lars(x, y, 'lasso')
+    # plot_path(beta_path)
