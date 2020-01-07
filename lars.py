@@ -7,17 +7,15 @@ import pandas as pd
 MAT_REG = 1e-12
 # Resolution for Lars
 LARS_RES = 1e-12
-eps = 1e-7
+eps = 1e-5
 
 def plot_path(beta_path):
-    plt.style.use('ggplot')
     sum_abs_coeff = np.sum(np.abs(beta_path), 1)
     plt.plot(sum_abs_coeff, beta_path)
     _, xmax, _, ymax = plt.axis()
     for i,coeff in enumerate(sum_abs_coeff):
         plt.axvline(x=coeff, linewidth=0.4, linestyle='--')
         plt.text(coeff-0.005*xmax, ymax,'{}'.format(i), fontsize=5)
-    plt.show()
 
 def update_save(history):
     #TODO
@@ -100,6 +98,7 @@ def lars(x, y, alg_type = "lars", verbose=False):
         c_max_temp = np.max(np.abs(c[np.setdiff1d(inactive_set, ignored_set)]))
         c_max, c_max_ind = c_max_temp, np.where(np.abs(c) + eps >= c_max_temp)[0]
         c_max_ind = np.setdiff1d(c_max_ind, ignored_set)
+        
         if len(c_max_ind) > 1:
             c_max_ind = np.setdiff1d(c_max_ind, active_set)
             ignored_set.extend(c_max_ind[1:])
@@ -233,10 +232,10 @@ if __name__ == "__main__":
     # x = scaler.transform(x)
     # y = y.reshape((-1,1))
     # y = StandardScaler().fit_transform(y)
-    data = pd.read_csv("tracks.txt", header=None)
+    data = pd.read_csv("train.csv")
     print(data.shape)
-    x = data.iloc[:,0:116].to_numpy()
-    y  = data.iloc[:,117].to_numpy()
+    x = data.iloc[:,0:82].to_numpy()
+    y  = data.critical_temp.to_numpy()
     y = y.reshape((-1,1))
     beta_path = lars(x, y, 'lars') 
     plot_path(beta_path)

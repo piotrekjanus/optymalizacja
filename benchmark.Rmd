@@ -1,22 +1,32 @@
 ---
-title: "benchmark"
+title: "Porównanie działania implementacji algorytmu LAR"
 author: "Paulina Tomaszewska, Piotr Janus"
 date: "30 12 2019"
-output: html_document
+output:
+  html_document:
+    theme: united
+    highlight: tango
+    mathjax: local
+    self_contained: false
+    toc: true
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
 require(reticulate)
 reticulate::use_python("C:/Users/Emedium/AppData/Local/Programs/Python/Python37/python.exe") 
 knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
 library(DT)
+library(dplyr)
 library(lars)
+library(microbenchmark)
 data("diabetes")
 attach(diabetes)
 ```
 
 
-```{python, echo=FALSE}
+```{python echo=FALSE, message=FALSE}
 from lars import lars, plot_path
 from sklearn.preprocessing import StandardScaler
 import numpy as np
@@ -24,99 +34,442 @@ from sklearn.datasets import load_diabetes
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
+```
+
+# Zbiór danych diabetycy 
+
+
+W pierwszej kolejności postanowiliśmy porównać działanie naszej implementacji na zbiorze danych przedstawionych w pierwszej publikacji na temat modelu LAR. Dane te dotyczą 442 pacjentów chorych na cukrzycę. Zostali oni opisani za pomocą dziesięciu zmiennych, takich jak wiek, czy ciśnienie krwi. Zadaniem modelu regresyjnego jest dopasowanie się do zmiennej objaśniajacej, odpowiadającej pewnej ilościowej reprezentacji rozwoju choroby po upływie jednego roku.  
+
+## LAR
+
+Na początku sprawdźmy jakie wyniki otrzymamy korzystając z gotowej implementacji alogorytmu LAR w R, oraz naszej implementacji w Pythonie.
+
+```{r, include=FALSE}
+object <- lars(x, y, "lar")$beta
+```
+
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 1: Zmiana parametrów $\beta$ w zależności od iteracji. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
 x, y = load_diabetes(return_X_y = True)
 y = y.reshape((-1,1))
+plt.style.use('ggplot')
 beta_path = lars(x, y, "lars")
-```
-
-## Diabetycy
-
-```{python, warnings=FALSE, echo=FALSE}
+plt.subplot(1, 2, 1)
 plot_path(beta_path)
+plt.subplot(1, 2, 2)
+plot_path(r.object)
+plt.show()
 ```
 
-```{python, echo = FALSE}
+
+Rysunek 1 przedstawia jak zmieniały się parametry obu modeli w kolejnych iteracjach. Możemy zauważyć, że dla tych danych wykresy są identyczne, a każdy z modeli wykonał 10 iteracji. Dokładne zmiany wartości współczynników $\beta$, w obu implementacjach możemy obserwować w Tabeli 1 oraz 2.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+kableExtra::kable(object %>% data.frame() %>% mutate_all(round, 2), caption = "Tabela 1: Wartości współczynników beta, dla kolejnych iteracji (R)") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE) 
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+data <- py$beta_path %>% data.frame()
+names(data) <- colnames(object)
+kableExtra::kable(data %>% as.matrix(), caption = "Tabela 2: Wartości współczynników beta, dla kolejnych iteracji (Python)") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE) 
+
+```
+
+Powyższe tabele jednoznacznie upewniają nas, że otrzymane wynik są zgodne z tym co uzyskamy, korzystając z gotowych rozwiązań.
+
+Tak jak zostało wspomniane wcześniej, algorytmy przeprowadziły 10 iteracji. Wynika to z faktu użycia warunku zatrzymującego jego działanie, którym w tym przypadku zawarcie wszystkich możliwych zmiennych w zbiorze aktywnym.
+
+**Porównanie czasu wykonania**
+
+Jeśli chodzi o czas wykonania, to nasza implementaca wypada gorzej niż ta zaimplementowana w języku R. Wynika to z faktu, że zawiera ona wiele modyfikacji, usprawniających obliczenia, które nie były zawarte w oryginalnej pracy przedstawionej przez Efron et al.
+
+
+
+```{python, include=FALSE}
 times = []
-for i in range(100):
-    start = time.time()
-    beta_path = lars(x, y, 'lars') 
-    end = time.time()
+from timeit import default_timer as timer
+for _ in range(100):
+    start = timer()
+    lars(x, y, 'lars')
+    end = timer()
     times.append(end-start)
 
 ```
 
-```{r message=FALSE, warnings=FALSE, echo=FALSE}
-library(dplyr)
-summary(py$times)
-DT::datatable(py$beta_path %>% data.frame())
+```{r echo=FALSE, fig.cap="Wykres: Zmiana parametrów $\beta$ w zależności od iteracji. Implmentacja Python"}
+comparison <- microbenchmark::microbenchmark(lars = lars::lars(x,y, "lar", use.Gram = FALSE), unit = "s")
+summary_py <- summary(py$times)
+summary_r <- summary(comparison) %>% select(-c("expr", "neval"))
+names(summary_r) <- names(summary_py)
+comp <- rbind(summary_r, summary_py) %>% mutate(Impl. = c("R", "Python"))
+kableExtra::kable(comp,  caption = "Tabela 3: Porównanie czasów wykonania dla 100 wywołań podane w sekundach") %>% 
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
 
 
+## LASSO
 
-```{r, echo=FALSE}
-library(microbenchmark)
-microbenchmark::microbenchmark(lars(x,y, "lar"), unit = "s")
-object <- lars(x,y, "lar")$beta
-DT::datatable(lars(x,y, "lar")$beta)
+Na tych samych danych ponownie dopasujemy model regresyjny, tym razem wprowadzając modyfikację LASSO.
+
+Ponowanie w pierwszej kolejności zbadamy zmianę współczynników $\beta$. Wyniki analizy przedstawione są na Rysunku 2. Jak pokazują poniższe rysunki, w tym przypadku wykonanych zostało 12 iteracji. Wiąże się to z faktem, iż jedna ze zmiennych kolejno w iteracji 10 oraz 11 przyjmuje wartość zero. Mimo to, w ostatniej dwunastej iteracji, zmienna ta ponownie włączana jest do zbioru aktywnego. Algorytm zostaje przerwany w następnym powtórzeniu pętli ze względu na wzrost wartości błędu średniokwadratowego residuów.
+
+```{r, include=FALSE}
+object <- lars(x, y, "lasso")$beta
 ```
 
-```{python, echo=FALSE}
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 2: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+x, y = load_diabetes(return_X_y = True)
+y = y.reshape((-1,1))
+plt.style.use('ggplot')
+beta_path = lars(x, y, "lasso")
+plt.subplot(1, 2, 1)
+plot_path(beta_path)
+plt.subplot(1, 2, 2)
 plot_path(r.object)
+plt.show()
 ```
 
-## Dane 280 zmiennych 
+Jak wynika z Tabeli 3, w której możemy obserwować dokładne wartości parametrów modelu, zmienną, która została wyrzucona ze zbioru aktywnego, jest **HDL**, odpowiadająca za poziom cholesterolu u pacjenta. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+data <- py$beta_path %>% data.frame()
+names(data) <- colnames(object)
+kableExtra::kable(data, caption = "Tabela 4: Wartości współczynników beta, dla kolejnych iteracji") %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE) 
+
+```
+
+**Porównanie czasu wykonania**
+
+Jak wynika z Tabeli 5, średni czas wykonania obliczeń w obu przypadkach wzrósł, co oczywiście wynika z konieczności przeprowadzenia dodatkowych dwóch iteracji, jednak ich stosunek nadal pozostaje podobny. 
+
+```{python, include=FALSE}
+times = []
+from timeit import default_timer as timer
+for i in range(100):
+    start = timer()
+    lars(x, y, 'lasso')
+    end = timer()
+    times.append(end-start)
+
+```
+
+```{r echo=FALSE, fig.cap="Wykres: Zmiana parametrów $\beta$ w zależności od iteracji. Implmentacja Python"}
+comparison <- microbenchmark::microbenchmark(lars = lars::lars(x,y, "lasso", use.Gram = FALSE), unit = "s")
+summary_py <- summary(py$times)
+summary_r <- summary(comparison) %>% select(-c("expr", "neval"))
+names(summary_r) <- names(summary_py)
+comp <- rbind(summary_r, summary_py) %>% mutate(Impl. = c("R", "Python"))
+kableExtra::kable(comp, caption = "Tabela 5: Porównanie czasów wykonania dla 100 wywołań podane w sekundach") %>% 
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+# Zbiór danych Superconductivity
+
+Kolejnym zestawem danych, który postanowiliśmy sprawdzić jest zbiór dotyczący właściwości chemicznych materiałów przewodzących [1](https://archive.ics.uci.edu/ml/datasets/Superconductivty+Data). Składa się on z 21263 nadprzewodników opisanych za pomocą ilościowej reprezentacji ich właściwości chemicznych jak masa atomowa, czy gęstość. Na pełen opis składa się 81 atrybutów. Zadaniem jest, na podstawie podanych własności, określić jaka jest temperatura krytyczna danego nadprzewodnika. Dane, ze względu na bardzo duże różnice między wariancjami kolejnych komuln, zostały unormowane.  
+
+## LAR
 
 ```{r message=FALSE, warnings=FALSE, echo=FALSE}
-data <- read.csv("blogData_train.csv", header = F)
-blog_x <- data[,1:280]
-blog_y <- data[,281]
-
-obj <- lars(as.matrix(blog_x), blog_y, 'lar', use.Gram = T)
+data <- read.delim("train.csv", sep = ",", header = T) %>% na.omit()
+a <- sapply(names(data), function(x) as.numeric(data[,x]))
+d_x <- data %>% select(-critical_temp) %>% as.matrix()
+d_x <- scale(d_x)
+d_y <- data %>% select(critical_temp) %>% as.matrix()
+obj <- lars(d_x, d_y, 'lar', use.Gram = F, intercept = F, normalize = F)
 val <- obj$beta
 ```
 
+Ze względu na mnogość zmiennych objaśniających, wykres przedstawiający zachowanie parametrów modelu może okazać się mało czytelny, jednak w łatwy sposób pozwala nam to określić, że rozwiązania uzyskane oboma implementacjami dają takie same rezultaty.
 
-```{python}
-blog_x = np.array(r.blog_x)
-blog_y = np.array(r.blog_y).reshape((-1,1))
-bet = lars(blog_x, blog_y, "lars")
-```
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
 
-```{python}
-plot_path(r.val)
-```
-
-```{python}
-plot_path(bet)
-```
-
-## Dane 180 zmiennych
-
-```{r message=FALSE, warnings=FALSE, echo=FALSE}
-data <- read.delim("tracks.txt", sep = ",", header = F)
-d_x <- data[,1:116]
-d_y <- data[,118]
-obj <- lars(as.matrix(d_x), d_y, 'lar', use.Gram = F, trace = F)
-val <- obj$beta
-```
-
-```{python}
-plot_path(r.val)
-```
-
-```{python}
 d_x = np.array(r.d_x)
 d_y = np.array(r.d_y).reshape((-1,1))
-bet = lars(d_x, d_y, "lars")
-
+beta_path = lars(d_x, d_y, "lars")
+plt.style.use('ggplot')
+plt.subplot(1, 2, 1)
+plot_path(beta_path)
+plt.subplot(1, 2, 2)
+plot_path(r.val)
+plt.show()
 ```
 
+Poniższy rysunek ponownie pokazuje, że sprawdzane implementacje zwracają takie same wyniki dla dużych zbiorów.
 
-```{python}
-plot_path(bet)
+```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 4: Wartości parametrów otrzymanego modelu regresji"}
+library(ggplot2)
+library(latex2exp)
+beta_r <- val[nrow(val),] %>% data.frame(val = .)  %>% mutate(var = rownames(.), Implementacja = "R")
+beta_py <- py$beta_path 
+beta_py <- beta_py[nrow(beta_py),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Implementacja = "Python")
+names(beta_py) <- names(beta_r)
+beta <- rbind(beta_r, beta_py)
+
+g <- ggplot(beta, aes(x = var, y = val, fill = Implementacja)) +
+  geom_col(position = position_dodge()) +
+  xlab(TeX("Parametry $\\beta$")) +
+  ylab(TeX("Wartość parametru $\\beta$")) +
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank())
+g
+# plotly::ggplotly(g)
 ```
+
+**Porównanie czasu wykonania**
+
+Dla modelu, który budowany jest z dużej ilości zmiennych, różnice w czasie zmieniają się znacząco, przez co z początkowego niemal 6 krótszego czasu wykonania dla implementacji w języku R, dla tego zbioru otrzymujemy wyniki, w których implementacja w języku Python jest wydajniejsza, co przekłada się na niemal 0,5 sekundy różnicy w średnim czas wykonania.
+
+```{python, include=FALSE}
+times = []
+from timeit import default_timer as timer
+for i in range(10):
+    start = timer()
+    lars(d_x, d_y, "lars")
+    end = timer()
+    times.append(end - start)
+```
+
+```{r echo=FALSE, fig.cap="Wykres: Zmiana parametrów $\beta$ w zależności od iteracji. Implmentacja Python"}
+comparison <- microbenchmark::microbenchmark(lars = lars::lars(d_x,d_y, "lar", use.Gram = F, intercept = F, normalize = F), times = 10,unit = "s")
+summary_py <- summary(py$times)
+summary_r <- summary(comparison) %>% select(-c("expr", "neval"))
+names(summary_r) <- names(summary_py)
+comp <- rbind(summary_r, summary_py) %>% mutate(Impl. = c("R", "Python"))
+kableExtra::kable(comp, caption = "Tabela 6: Porównanie czasów wykonania dla 100 wywołań podane w sekundach") %>% 
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+## LASSO
+
+Wywołanie algorytmów z uwzględnieniem kroku LASSO w skutkuje otrzymaniem 135 iteracji 
 
 ```{r message=FALSE, warnings=FALSE, echo=FALSE}
-sum(val[nrow(val),] == 0)
-sum(py$bet[nrow(py$bet),] == 0)
+data <- read.delim("train.csv", sep = ",", header = T) %>% na.omit()
+a <- sapply(names(data), function(x) as.numeric(data[,x]))
+d_x <- data %>% select(-critical_temp) %>% as.matrix()
+d_x <- scale(d_x)
+d_y <- data %>% select(critical_temp) %>% as.matrix()
+obj_ <- lars(d_x, d_y, 'lasso', use.Gram = F, trace = F, intercept = F, normalize = F)
 ```
+
+Ze względu na mnogość zmiennych objaśniających, wykres przedstawiający zachowanie parametrów modelu może okazać się mało czytelny, jednak w łatwy sposób pozwala nam to określić, że rozwiązania uzyskane oboma implementacjami dają takie same rezultaty.
+
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+
+d_x = np.array(r.d_x)
+d_y = np.array(r.d_y).reshape((-1,1))
+beta_path_ = lars(d_x, d_y, "lasso")
+plt.style.use('ggplot')
+plt.subplot(1, 2, 1)
+plot_path(beta_path)
+plt.subplot(1, 2, 2)
+plot_path(r.val)
+plt.show()
+```
+
+
+Bardzo zaskakującą obserwacja przedstawiona jest na Rysunku 6., gdzie widzimy, iż mimo że rozwiązanie z krokiem LASSo potrzebowało niemal 50 iteracji więcej, końcowe parametry modelu są identyczne w stosunku do tego co mogliśmy obserwować dopasowując model czystą metoda LAR.
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 6: Wartości parametrów otrzymanego modelu regresji"}
+beta_lar <- beta_r %>% mutate(Algorytm = "lar") %>% select(-Implementacja)
+beta_lasso <- py$beta_path_
+beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
+names(beta_lasso) <- names(beta_lar)
+beta <- rbind(beta_lar, beta_lasso)
+
+g <- ggplot(beta, aes(x = var, y = val, fill = Algorytm)) +
+  geom_col(position = position_dodge()) +
+  xlab(TeX("Parametry $\\beta$")) +
+  ylab(TeX("Wartość parametru $\\beta$")) +
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank())
+g
+# plotly::ggplotly(g)
+```
+
+Ciekawym zatem wydaje się porównanie jak zmieniał się błąd średniokwadratowy w czasie iteracji tymi dwoma metodami.
+
+Jak pokazuje Rysunek 9. w pierszwych iteracjach zachowują się tak samo, co oznacza, że wtedy nie nastąpiło wyrzucenie zmiennych ze zbioru aktywnego. Obie metody zmierzają do wartości, ok. 1493 (zaznaczonej przerywaną linią), jednak w przypadku modelu LAR, zbieżność jest szybsza.  
+
+```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 9: Wartości błędu średniokwadratowego w kolejnych iteracjach dla kroków LAR i LASSO"}
+a <- data.frame(val = obj_$RSS/21263) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LASSO")
+b <- data.frame(val = obj$RSS/21263) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LAR")
+c <- rbind(a,b)
+ggplot(c, aes(x = x, y = val, col = Implementacja)) +
+  geom_line(size=2)+
+  geom_hline(aes(yintercept=1493.086), linetype = "dashed", size=1) +
+  xlab("Iteracja") +
+  ylab("MSE")
+```
+
+**Porównanie czasu wykonania**
+
+W tym przypadku ponowanie możemy obserwować podobne zachowanie, kiedy nasza implementacja zapewnia krótszy czas działania o ok 0,5 sekundy.
+
+```{python, include=FALSE, cache=TRUE}
+times = []
+from timeit import default_timer as timer
+for i in range(10):
+    start = timer()
+    lars(d_x, d_y, "lasso")
+    end = timer()
+    times.append(end - start)
+```
+
+```{r echo=FALSE, cache=TRUE, fig.cap="Wykres: Zmiana parametrów $\beta$ w zależności od iteracji. Implmentacja Python"}
+comparison <- microbenchmark::microbenchmark(lars = lars::lars(d_x, d_y, "lasso", use.Gram = F, intercept = F, normalize = F), times = 10,unit = "s")
+summary_py <- summary(py$times)
+summary_r <- summary(comparison) %>% select(-c("expr", "neval"))
+names(summary_r) <- names(summary_py)
+comp <- rbind(summary_r, summary_py) %>% mutate(Impl. = c("R", "Python"))
+kableExtra::kable(comp, caption = "Tabela 6: Porównanie czasów wykonania dla 100 wywołań podane w sekundach") %>% 
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
+# Dane 118 zmiennych 
+
+
+## LAR
+
+```{r message=FALSE, warnings=FALSE, echo=FALSE}
+data <- read.delim("tracks.txt", sep = ",", header = F) %>% na.omit()
+x3 <- data[,1:116] %>% as.matrix()
+x3 <- scale(x3)
+y3 <- data[,118] %>% as.matrix()
+obj <- lars(x3, y3, 'lar', use.Gram = F, intercept = F, normalize = F, trace = F)
+val <- obj$beta
+```
+
+
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+x3 = np.array(r.x3)
+y3 = np.array(r.y3).reshape((-1,1))
+beta_path = lars(x3, y3, "lars", verbose=True)
+plt.style.use('ggplot')
+plt.subplot(1, 2, 1)
+plot_path(beta_path)
+plt.subplot(1, 2, 2)
+plot_path(r.val)
+plt.show()
+```
+
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 4: Wartości parametrów otrzymanego modelu regresji"}
+library(ggplot2)
+library(latex2exp)
+beta_r <- val[nrow(val),] %>% data.frame(val = .)  %>% mutate(var = rownames(.), Implementacja = "R")
+beta_py <- py$beta_path 
+beta_py <- beta_py[nrow(beta_py),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Implementacja = "Python")
+names(beta_py) <- names(beta_r)
+beta <- rbind(beta_r, beta_py)
+
+g <- ggplot(beta, aes(x = var, y = val, fill = Implementacja)) +
+  geom_col(position = position_dodge()) +
+  xlab(TeX("Parametry $\\beta$")) +
+  ylab(TeX("Wartość parametru $\\beta$")) +
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank())
+g
+# plotly::ggplotly(g)
+```
+
+**Porównanie czasu wykonania**
+
+Dla modelu, który budowany jest z dużej ilości zmiennych, różnice w czasie zmieniają się znacząco, przez co z początkowego niemal 6 krótszego czasu wykonania dla implementacji w języku R, dla tego zbioru otrzymujemy wyniki, w których implementacja w języku Python jest wydajniejsza, co przekłada się na niemal 0,5 sekundy różnicy w średnim czas wykonania.
+
+```{python, include=FALSE}
+times = []
+from timeit import default_timer as timer
+for i in range(100):
+    start = timer()
+    lars(x3, y3, "lars")
+    end = timer()
+    times.append(end - start)
+```
+
+```{r echo=FALSE, fig.cap="Wykres: Zmiana parametrów $\beta$ w zależności od iteracji. Implmentacja Python"}
+comparison <- microbenchmark::microbenchmark(lars = lars::lars(x3,y3, "lar", use.Gram = F, intercept = F, normalize = F), times = 100,unit = "s")
+summary_py <- summary(py$times)
+summary_r <- summary(comparison) %>% select(-c("expr", "neval"))
+names(summary_r) <- names(summary_py)
+comp <- rbind(summary_r, summary_py) %>% mutate(Impl. = c("R", "Python"))
+kableExtra::kable(comp, caption = "Tabela 6: Porównanie czasów wykonania dla 100 wywołań podane w sekundach") %>% 
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+## LASSO
+
+
+```{r message=FALSE, warnings=FALSE, echo=FALSE}
+obj_ <- lars::lars(x3, y3, 'lasso', use.Gram = F, trace = F, intercept = F, normalize = F)
+val_ <- obj_$beta
+```
+
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+
+beta_path_ = lars(x3, y3, "lasso", verbose=True)
+plt.style.use('ggplot')
+plt.subplot(1, 2, 1)
+plot_path(beta_path)
+plt.subplot(1, 2, 2)
+plot_path(r.val_)
+plt.show()
+```
+
+
+```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 6: Wartości parametrów otrzymanego modelu regresji"}
+beta_lar <- beta_py %>% mutate(Algorytm = "lar") %>% select(-Implementacja)
+beta_lasso <- py$beta_path_
+beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
+names(beta_lasso) <- names(beta_lar)
+beta <- rbind(beta_lar, beta_lasso)
+
+g <- ggplot(beta, aes(x = var, y = val, fill = Algorytm)) +
+  geom_col(position = position_dodge()) +
+  xlab(TeX("Parametry $\\beta$")) +
+  ylab(TeX("Wartość parametru $\\beta$")) +
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank())
+g
+# plotly::ggplotly(g)
+```
+
+
+```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 9: Wartości błędu średniokwadratowego w kolejnych iteracjach dla kroków LAR i LASSO"}
+a <- data.frame(val = obj_$RSS/1059) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LASSO")
+b <- data.frame(val = obj$RSS/1059) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LAR")
+c <- rbind(a,b)
+ggplot(c, aes(x = x, y = val, col = Implementacja)) +
+  geom_line(size=2)+
+  geom_hline(aes(yintercept=1500), linetype = "dashed", size=1) +
+  xlab("Iteracja") +
+  ylab("MSE")
+```
+
+**Porównanie czasu wykonania**
+
+
+```{python, include=FALSE, cache=TRUE}
+times = []
+from timeit import default_timer as timer
+for i in range(100):
+    start = timer()
+    lars(x3, y3, "lasso")
+    end = timer()
+    times.append(end - start)
+```
+
+```{r echo=FALSE, cache=TRUE, fig.cap="Wykres: Zmiana parametrów $\beta$ w zależności od iteracji. Implmentacja Python"}
+comparison <- microbenchmark::microbenchmark(lars = lars::lars(x3, y3, "lasso", use.Gram = F, intercept = F, normalize = F), times = 100,unit = "s")
+summary_py <- summary(py$times)
+summary_r <- summary(comparison) %>% select(-c("expr", "neval"))
+names(summary_r) <- names(summary_py)
+comp <- rbind(summary_r, summary_py) %>% mutate(Impl. = c("R", "Python"))
+kableExtra::kable(comp, caption = "Tabela 6: Porównanie czasów wykonania dla 100 wywołań podane w sekundach") %>% 
+   kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+```
+
