@@ -349,7 +349,7 @@ val <- obj$beta
 ```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
 x3 = np.array(r.x3)
 y3 = np.array(r.y3).reshape((-1,1))
-beta_path = lars(x3, y3, "lars", verbose=True)
+beta_path = lars(x3, y3, "lars")
 plt.style.use('ggplot')
 plt.subplot(1, 2, 1)
 plot_path(beta_path)
@@ -411,7 +411,7 @@ val_ <- obj_$beta
 
 ```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
 
-beta_path_ = lars(x3, y3, "lasso", verbose=True)
+beta_path_ = lars(x3, y3, "lasso")
 plt.style.use('ggplot')
 plt.subplot(1, 2, 1)
 plot_path(beta_path)
