@@ -11,6 +11,7 @@ eps = 1e-5
 
 def plot_path(beta_path):
     sum_abs_coeff = np.sum(np.abs(beta_path), 1)
+    # plt.figure(figsize=(6, 6))kkkkj
     plt.plot(sum_abs_coeff, beta_path)
     _, xmax, _, ymax = plt.axis()
     for i,coeff in enumerate(sum_abs_coeff):
@@ -204,7 +205,7 @@ def lars(x, y, alg_type = "lars", verbose=False):
         # mu_a = mu_a + c_max/Aa * ua 
         # beta = beta + c_max/Aa * d 
         MSE = np.sum((res - mu_a)**2)/len(res)
-        # MSE = np.sum((res - x.dot(beta_new.T))**2)/len(res)
+        # MSE = np.sum((res - x.dot(beta_))**2)/len(res)
         # mu_a = mu_a_plus
         # beta = beta_new
         history["mse"] = history["mse"] + [MSE]
@@ -220,11 +221,11 @@ def lars(x, y, alg_type = "lars", verbose=False):
         if check_stop_criterions(history):
             break
 
-    # print(history["mse"])
+    print(history["mse"])
     d = pd.DataFrame(np.round(history["beta"], 2).reshape((i+1, m)))
     # print(d)
 
-    return np.squeeze(d)
+    return np.squeeze(d), history
         
 if __name__ == "__main__":
     # x, y = load_diabetes(return_X_y = True)
