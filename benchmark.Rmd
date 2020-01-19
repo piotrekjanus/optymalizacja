@@ -1,5 +1,5 @@
 ---
-title: "Porównanie działania implementacji algorytmu LAR"
+title: "Porównanie działania implementacji algorytmu LARS"
 author: "Paulina Tomaszewska, Piotr Janus"
 date: "30 12 2019"
 output:
@@ -43,11 +43,11 @@ x, y = load_diabetes(return_X_y = True)
 # Zbiór danych diabetycy 
 
 
-W pierwszej kolejności postanowiliśmy porównać działanie naszej implementacji na zbiorze danych przedstawionych w pierwszej publikacji na temat modelu LAR. Dane te dotyczą 442 pacjentów chorych na cukrzycę. Zostali oni opisani za pomocą dziesięciu zmiennych, takich jak wiek, czy ciśnienie krwi. Zadaniem modelu regresyjnego jest dopasowanie się do zmiennej objaśniajacej, odpowiadającej pewnej ilościowej reprezentacji rozwoju choroby po upływie jednego roku.  
+W pierwszej kolejności postanowiliśmy porównać działanie naszej implementacji na zbiorze danych przedstawionych w pierwszej publikacji na temat modelu LARS. Dane te dotyczą 442 pacjentów chorych na cukrzycę. Zostali oni opisani za pomocą dziesięciu zmiennych, takich jak wiek, czy ciśnienie krwi. Zadaniem modelu regresyjnego jest dopasowanie się do zmiennej objaśniajacej, odpowiadającej pewnej ilościowej reprezentacji rozwoju choroby po upływie jednego roku.  
 
-## LAR
+## LARS
 
-Na początku sprawdźmy jakie wyniki otrzymamy korzystając z gotowej implementacji alogorytmu LAR w R, oraz naszej implementacji w Pythonie.
+Na początku sprawdźmy jakie wyniki otrzymamy korzystając z gotowej implementacji alogorytmu LARS w R, oraz naszej implementacji w Pythonie.
 
 ```{r, include=FALSE}
 object <- lars(x, y, "lar")$beta
@@ -88,13 +88,13 @@ kableExtra::kable(data %>% as.matrix(), caption = "Tabela 2: Wartości współcz
 
 ```
 
-Powyższe tabele jednoznacznie upewniają nas, że otrzymane wynik są zgodne z tym co uzyskamy, korzystając z gotowych rozwiązań.
+Powyższe tabele jednoznacznie upewniają nas, że otrzymane wynik są zgodne z tym co uzyskujemy, korzystając z gotowych rozwiązań.
 
 Tak jak zostało wspomniane wcześniej, algorytmy przeprowadziły 10 iteracji. Wynika to z faktu użycia warunku zatrzymującego jego działanie, którym w tym przypadku jest zawarcie wszystkich możliwych zmiennych w zbiorze aktywnym.
 
 **Porównanie czasu wykonania**
 
-Jeśli chodzi o czas wykonania, to nasz algorytm wypada gorzej niż ten zaimplementowana w języku R. Wynika to z faktu, że zawiera ona wiele modyfikacji, usprawniających obliczenia, które nie były zawarte w oryginalnej pracy przedstawionej przez Efron et al.
+Jeśli chodzi o czas wykonania, to nasz algorytm wypada gorzej niż ten zaimplementowany w języku R. Wynika to z faktu, że gotowa funkcja w R zawiera wiele modyfikacji usprawniających obliczenia, które nie były zawarte w oryginalnej pracy przedstawionej przez Efron et al.
 
 ```{python, include=FALSE}
 times = []
@@ -122,7 +122,7 @@ kableExtra::kable(comp,  caption = "Tabela 3: Porównanie czasów wykonania dla 
 
 Na tych samych danych ponownie dopasujemy model regresyjny, tym razem wprowadzając modyfikację LASSO.
 
-Ponowanie zbadamy zmianę współczynników $\beta$. Wyniki analizy przedstawione są na Rysunku 2. Jak pokazują poniższe wykresy, w tym przypadku wykonanych zostało 12 iteracji. Wiąże się to z faktem, iż jedna ze zmiennych kolejno w iteracji 10 oraz 11 przyjmuje wartość zero. Mimo to, w ostatniej dwunastej iteracji, zmienna ta ponownie włączana jest do zbioru aktywnego. Algorytm zostaje przerwany w następnym powtórzeniu pętli ze względu na wzrost wartości błędu średniokwadratowego residuów.
+Zbadamy zmianę współczynników $\beta$. Wyniki analizy przedstawione są na Rysunku 2. Jak pokazują poniższe wykresy, w tym przypadku wykonanych zostało 12 iteracji. Wiąże się to z faktem, iż jedna ze zmiennych kolejno w iteracji 10 oraz 11 przyjmuje wartość zero (tym samym jest usuwana ze zbioru aktywnego). Mimo to, w ostatniej dwunastej iteracji, zmienna ta ponownie włączana jest do zbioru aktywnego. Algorytm zostaje przerwany w następnym powtórzeniu pętli ze względu na wzrost wartości błędu średniokwadratowego.
 
 ```{r, include=FALSE}
 object <- lars(x, y, "lasso")$beta
@@ -186,7 +186,7 @@ kableExtra::kable(comp, caption = "Tabela 5: Porównanie czasów wykonania dla 1
 
 Kolejnym zestawem danych, który postanowiliśmy sprawdzić jest zbiór dotyczący właściwości chemicznych materiałów przewodzących [1](https://archive.ics.uci.edu/ml/datasets/Superconductivty+Data). Składa się on z 21263 nadprzewodników opisanych za pomocą ilościowej reprezentacji ich właściwości chemicznych, jak masa atomowa, czy gęstość. Na pełen opis składa się 81 atrybutów. Zadaniem jest, na podstawie podanych własności, określić jaka jest temperatura krytyczna danego nadprzewodnika. Dane, ze względu na bardzo duże różnice między wariancjami kolejnych komuln, zostały unormowane.
 
-## LAR
+## LARS
 
 ```{r message=FALSE, warnings=FALSE, echo=FALSE}
 data <- read.delim("train.csv", sep = ",", header = T) %>% na.omit()
@@ -198,7 +198,7 @@ obj <- lars(d_x, d_y, 'lar', use.Gram = F, intercept = T, normalize = F)
 val <- obj$beta
 ```
 
-Ze względu na mnogość zmiennych objaśniających, wykres przedstawiający zachowanie parametrów modelu może okazać się mało czytelny, jednak w łatwy sposób pozwala nam to określić, że rozwiązania uzyskane oboma implementacjami dają takie same rezultaty.
+Ze względu na mnogość zmiennych objaśniających, wykres przedstawiający zachowanie parametrów modelu może okazać się mało czytelny, jednak w łatwy sposób pozwala nam to określić, że rozwiązania uzyskane w wyniki dwóch implementacji są takie same.
 
 ```{python, include = FALSE, echo=FALSE}
 
@@ -239,7 +239,7 @@ g
 
 **Porównanie czasu wykonania**
 
-Dla modelu, który budowany jest z dużej ilości zmiennych, różnice w czasie zmieniają się znacząco, przez co z początkowego niemal 6 krótszego czasu wykonania dla implementacji w języku R, dla tego zbioru otrzymujemy wyniki, w których implementacja w języku Python jest wydajniejsza, co przekłada się na niemal 0,5 sekundy różnicy w średnim czas wykonania.
+Dla modelu, który zbudowany jest z dużej ilości zmiennych, różnice w czasie zmieniają się znacząco, przez co z początkowego niemal 6 krótszego czasu wykonania dla implementacji w języku R, dla tego zbioru otrzymujemy wyniki, w których implementacja w języku Python jest wydajniejsza, co przekłada się na niemal 0,5 sekundy różnicy w średnim czas wykonania.
 
 ```{python, include=FALSE}
 times = []
@@ -263,7 +263,7 @@ kableExtra::kable(comp, caption = "Tabela 6: Porównanie czasów wykonania dla 1
 
 ## LASSO
 
-Wywołanie algorytmów z uwzględnieniem kroku LASSO w skutkuje otrzymaniem 135 iteracji
+Wywołanie algorytmów z uwzględnieniem kroku LASSO skutkuje otrzymaniem 135 iteracji
 
 ```{r message=FALSE, warnings=FALSE, echo=FALSE}
 
@@ -295,14 +295,14 @@ plt.show()
 
 ```
 
-Porównanie parametrów obu modeli stworzonych przy pomocy alorytmu LAR i jego modyfikacji LASSO, przedstawione jest na Rysunku 6., gdzie widzimy, iż mimo że rozwiązanie z krokiem LASSO potrzebowało niemal 50 iteracji więcej, końcowe parametry modelu są identyczne.
+Porównanie parametrów obu modeli stworzonych przy pomocy alorytmu LARS i jego modyfikacji LASSO, przedstawione jest na Rysunku 6., gdzie widzimy, iż mimo że rozwiązanie z krokiem LASSO potrzebowało niemal 50 iteracji więcej, końcowe parametry modelu są identyczne.
 
 ```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 6: Wartości parametrów otrzymanego modelu regresji"}
-beta_lar <- beta_r %>% mutate(Algorytm = "lar") %>% select(-Implementacja)
+beta_LARS <- beta_r %>% mutate(Algorytm = "LARS") %>% select(-Implementacja)
 beta_lasso <- py$beta_path_
 beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
-names(beta_lasso) <- names(beta_lar)
-beta <- rbind(beta_lar, beta_lasso)
+names(beta_lasso) <- names(beta_LARS)
+beta <- rbind(beta_LARS, beta_lasso)
 
 g <- ggplot(beta, aes(x = var, y = val, fill = Algorytm)) +
   geom_col(position = position_dodge()) +
@@ -315,11 +315,11 @@ g
 
 Ciekawym zatem wydaje się porównanie jak zmieniał się błąd średniokwadratowy w czasie iteracji tymi dwoma metodami.
 
-Jak pokazuje Rysunek 7. w pierszwych iteracjach zachowują się tak samo, co oznacza, że wtedy nie nastąpiło wyrzucenie zmiennych ze zbioru aktywnego. Obie metody zmierzają do wartości, ok. 1493 (zaznaczonej przerywaną linią), jednak w przypadku modelu LAR, zbieżność jest szybsza.
+Jak pokazuje Rysunek 7. w pierszwych iteracjach zachowują się tak samo, co oznacza, że wtedy nie nastąpiło wyrzucenie zmiennych ze zbioru aktywnego. Obie metody zmierzają do wartości, ok. 1493 (zaznaczonej przerywaną linią), jednak w przypadku modelu LARS, zbieżność jest szybsza.
 
-```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 7: Wartości błędu średniokwadratowego w kolejnych iteracjach dla kroków LAR i LASSO"}
+```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 7: Wartości błędu średniokwadratowego w kolejnych iteracjach dla kroków LARS i LASSO"}
 a <- data.frame(val = obj_$RSS/dim(data)[1]) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LASSO")
-b <- data.frame(val = obj$RSS/dim(data)[1]) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LAR")
+b <- data.frame(val = obj$RSS/dim(data)[1]) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "LARS")
 c <- rbind(a,b)
 ggplot(c, aes(x = x, y = val, col = Implementacja)) +
   geom_line(size=2)+
@@ -330,7 +330,7 @@ ggplot(c, aes(x = x, y = val, col = Implementacja)) +
 
 **Porównanie czasu wykonania**
 
-W tym przypadku ponowanie możemy obserwować podobne zachowanie, kiedy nasza implementacja zapewnia krótszy czas działania o ok 0,5 sekundy.
+W tym przypadku ponownie możemy wysnuć wniosek, że nasza implementacja zapewnia krótszy czas działania o ok. 0,5 sekundy w porównaniu do funkcji w języku R.
 
 ```{python, include=FALSE}
 times = []
@@ -357,7 +357,7 @@ kableExtra::kable(comp, caption = "Tabela 7: Porównanie czasów wykonania dla 1
 
 Ostatnim przez nas analizowany zbiorem jest "Geographical Original of Music Data Set". Został zbudowany z 1059 utworów, pochodzących z 33 krajów. Każdy z rekordów zawiera informacje dotyczące utworu, opisanych za pomocą 116 zmiennych objaśniających, a także dwie, będące wartością szerokości i długości geograficznej. Celem modelu jest wykrycie charakterystycznych cech dla muzyki w danym położeniu geograficznym. Zestaw posiada 1059 obserwacji, co daje niewielki stosunek ich liczby do atrybutów, przez co może to być wyzwanie dla modelu. 
 
-## LAR
+## LARS
 
 Pierwszą bardzo istotną zmianą w kontekście pozostałych modeli jest występowanie zmiennych współliniowych. Oznacza to, że wartość korelacji wyliczana w kolejnych iteracjach dla takich zmiennych będzie bardzo zbliżona. Modyfikacją, którą zaobserwowaliśmy w implementacji R, a nie została opisana w oryginalnej pracy, na której oparta jest nasze rozwiazanie, jest wzięcie wszystkich zmiennych, których korelacja z aktualnymi residuami znajduje się w odległości nie większej niż ustalona wartość $\epsilon$. W naszym przypadku wartość ta wynosi $10^{-6}$. Wszystkie zmienne z tego przedziału, zostają trwale usunięte ze zbioru nieaktywnego, oprócz jednej, która następnie trafia do zbioru aktywnego. Tym sposobem w kolejnych iteracjach, odrzucane są następujące zmienne:
 
@@ -413,7 +413,7 @@ g
 
 
 
-```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 10: Wartości błędu średniokwadratowego w kolejnych iteracjach dla kroków LAR i LASSO"}
+```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 10: Wartości błędu średniokwadratowego w kolejnych iteracjach dla implementacji w R i Python"}
 vals <- obj$RSS/dim(data)[1]
 
 a <- data.frame(val = unname(vals)) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "R")
@@ -426,11 +426,11 @@ ggplot(c, aes(x = x, y = val, col = Implementacja)) +
   ylab("MSE")
 ```
 
-Analiza wykresu zmiany błędu średniokwadratowego dla kolejnych iteracji pokazuje, że poczatkowo dopasowywanie modelu przebiegało podobnie, następnie około 30 iteracji, występuje rozbierzność. Wartym uwagii jest fakty, że dla naszego modelu końcowa wartość MSE jest niemal identyczna, przy czym zawiera on 12 zmiennych mniej, co jest bardzo ważne z punktu widzenia generalizacji rozwiązania.
+Analiza wykresu zmiany błędu średniokwadratowego dla kolejnych iteracji pokazuje, że poczatkowo dopasowywanie modelu przebiegało podobnie, następnie około 30 iteracji, występuje rozbieżność. Wartym uwagi jest fakty, że dla naszego modelu w Pythonie końcowa wartość MSE jest niemal identyczna jak ta uzyskana funkcją w R, jednak nasz model zawiera 12 zmiennych mniej, co jest bardzo ważne z punktu widzenia generalizacji rozwiązania.
 
 **Porównanie czasu wykonania**
 
-Ponownie mamy do czynienia z sytuacją, w której liczba obserwacji nie jest duża. Wiąże się to, zgodnie z naszymi wcześniejszymi obserwacjami, z faktem, że czas wykonywania obliczeń jest krótszy dla R. Taki zbiór danych pozwolił na uzyskanie tylko 3-krotnej różnicy w czasie wykonania, co w porównaniu do zbioru diabetyków, jest zmniejszeniem dwukrotnym stosunku czasów wykonania. 
+Ponownie mamy do czynienia z sytuacją, w której liczba obserwacji nie jest duża. Skutkuje to, zgodnie z naszymi wcześniejszymi obserwacjami tym, że czas wykonywania obliczeń jest krótszy dla R. Taki zbiór danych pozwolił na uzyskanie tylko 3-krotnej różnicy w czasie wykonania, co w porównaniu do zbioru diabetyków, jest zmniejszeniem dwukrotnym stosunku czasów wykonania. 
 
 ```{python, include=FALSE}
 times = []
@@ -475,14 +475,14 @@ plot_path(r.val_)
 
 plt.show()
 ```
-Tym razem końcowym rezultatem są w obu przypadkach jest model, zawierający te same zmienne, jednak wartości parametrów różnią się, co możemy obserwować na wykresie poniżej.
+Tym razem końcowym rezultatem w obu przypadkach jest model, zawierający te same zmienne, jednak wartości parametrów różnią się (co możemy obserwować na wykresie poniżej).
 
 ```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 6: Wartości parametrów otrzymanego modelu regresji"}
-beta_lar <- beta_py %>% mutate(Algorytm = "lar") %>% select(-Implementacja)
+beta_LARS <- beta_py %>% mutate(Algorytm = "LARS") %>% select(-Implementacja)
 beta_lasso <- py$beta_path_
 beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
-names(beta_lasso) <- names(beta_lar)
-beta <- rbind(beta_lar, beta_lasso)
+names(beta_lasso) <- names(beta_LARS)
+beta <- rbind(beta_LARS, beta_lasso)
 
 g <- ggplot(beta, aes(x = var, y = val, fill = Algorytm)) +
   geom_col(position = position_dodge()) +
@@ -495,7 +495,7 @@ g
 
 Różnice także widoczne są w czasie procesu dopasowania modelu, gdzie między 9 a 43 iteracją występowały rozbieżności co do wartości błędu średniokwadratowego. Mimo to, w ostatniej iteracji obu algorytmów, wartości te są bardzo zbliżone.
 
-```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 9: Wartości błędu średniokwadratowego w kolejnych iteracjach dla kroków LAR i LASSO"}
+```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 9: Wartości błędu średniokwadratowego w kolejnych iteracjach dla implementacji w R i Pythonie"}
 vals <- obj_$RSS/dim(data)[1]
 
 a <- data.frame(val = unname(vals)) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "R")
@@ -540,6 +540,18 @@ kableExtra::kable(comp, caption = "Tabela 9: Porównanie czasów wykonania dla 1
 ```
 
 # Podsumowanie
+Przeprowadziliśmy porównanie naszej implementacji w języku Python z implementacją w języku R. Napisany przez nas kod podąża za krokami opisanymi w oryginalnej pracy, jednocześnie dodaliśmy krok polegający na rozwiązaniu problemu współliniowości, który nie został przytoczony w publikacji. Zauważyliśmy rozbieżności dotyczące czasów działania w zależności od analizowanego zbioru. 
 
-Przeprowadziliśmy porównanie naszej implementacji w języku Python z implementacją w języku R. Napisany przez nas kod podąża za krokami opisanymi w oryginalnej pracy, jednocześnie dodaliśmy krok polegający na rozwiązaniu problemu współliniowości, który nie został przytoczony w publikacji. Zauważyliśmy rozbieżności dotyczące czasów działania w zależności od analizowanego zbioru. Pierwszym wnioskiem jest fakt, że dla mały zbiorów danych, czyli takich gdzie liczba obserwacji nie przekracza kilku tysięcy, zdecydowanie lepiej radzi sobie R. Wynika to w naszej opinii z zastosowania pewnych "sztuczek" implementacyjnych, które nie zostały opisane w oryginalnej pracy, a do których też w pełni nie mamy dostępu na skutek niepełnej jawności kodu. Inną obserwacją jest czas prowadzenia obliczeń dla zbioru, który zawiera przynajmniej dziesiątki tysięcy obserwacji. Dzięki wydajnym algorytmom odrwacania macierzy i wykonywania na nich innych operacji matematycznych, język Python okazuje się być lepszy. 
-Ostatnią obserwacja dotyczny zbiorów danych, dla których występuje współliniowość w danych. Powoduje to rozbieżności w działaniu obu algorytmów, których nie jesteśmy w pełni odtworzyć ze względu na wcześniej wspomnianą pełną niejawność kodu. Mimo to, końcowy wynik zawsze jest zbliżony. Co więcej otrzymany przez nas model LAR, w naszej opinii daje lepszy wynik końcowy, ze względu na zawarcie mniejszej liczby zmienych, jednocześnie otrzymując bardzo zbliżone wartości błędu średniokwadratowego, co ma znaczenie w generalizacji rozwiązania.    
+Wnioski:
+
+* dla mały zbiorów danych, czyli takich gdzie liczba obserwacji nie przekracza kilku tysięcy, zdecydowanie lepiej radzi sobie R
+
+Wynika to w naszej opinii z zastosowania pewnych "sztuczek" implementacyjnych, które nie zostały opisane w oryginalnej pracy, a do których też w pełni nie mamy dostępu na skutek niepełnej jawności kodu. 
+
+* czas prowadzenia obliczeń dla zbioru, który zawiera przynajmniej dziesiątki tysięcy obserwacji jest krótszy dla naszej implementacji w Pytonie
+
+Jest to możliwe z uwagi na wydajne wykonywanie operacji macierzowych (w tym odwracania macierzy). 
+
+* implmentacje w R i Pythonie różnią się finalnymi współczynnikami modelu w przypadku istnienia współliniowości w danych
+
+Trudno jest jednoznacznie zidentyfikować powód takiej sytuacji z uwagi na wcześniej wspomnianą niepełną jawność kodu w R. Mimo to, końcowy wynik jest zbliżony. Co więcej otrzymany przez nas model LARS, w naszej opinii daje lepszy wynik końcowy, ze względu na zawarcie mniejszej liczby zmiennych, jednocześnie otrzymując bardzo zbliżone wartości błędu średniokwadratowego, co ma znaczenie w generalizacji rozwiązania.     
