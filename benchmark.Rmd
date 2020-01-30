@@ -6,8 +6,6 @@ output:
   html_document:
     theme: united
     highlight: tango
-    mathjax: local
-    self_contained: false
     toc: true
     df_print: paged
     number_sections: true
@@ -15,7 +13,7 @@ output:
 
 ```{r setup, include=FALSE}
 require(reticulate)
-reticulate::use_python("C:/Users/Emedium/AppData/Local/Programs/Python/Python37/python.exe") 
+reticulate::use_python("put/your/path/python.exe") 
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, info = FALSE)
 library(kableExtra)
 library(DT)
@@ -471,13 +469,13 @@ plt.subplot(1, 2, 2)
 plot_path(r.val_)
 ```
 
-```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 11: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
 
 plt.show()
 ```
 Tym razem końcowym rezultatem w obu przypadkach jest model, zawierający te same zmienne, jednak wartości parametrów różnią się (co możemy obserwować na wykresie poniżej).
 
-```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 6: Wartości parametrów otrzymanego modelu regresji"}
+```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 12: Wartości parametrów otrzymanego modelu regresji"}
 beta_LARS <- beta_py %>% mutate(Algorytm = "LARS") %>% select(-Implementacja)
 beta_lasso <- py$beta_path_
 beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
@@ -495,7 +493,7 @@ g
 
 Różnice także widoczne są w czasie procesu dopasowania modelu, gdzie między 9 a 43 iteracją występowały rozbieżności co do wartości błędu średniokwadratowego. Mimo to, w ostatniej iteracji obu algorytmów, wartości te są bardzo zbliżone.
 
-```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 9: Wartości błędu średniokwadratowego w kolejnych iteracjach dla implementacji w R i Pythonie"}
+```{r echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 13: Wartości błędu średniokwadratowego w kolejnych iteracjach dla implementacji w R i Pythonie"}
 vals <- obj_$RSS/dim(data)[1]
 
 a <- data.frame(val = unname(vals)) %>% mutate(x = as.numeric(rownames(.)), Implementacja = "R")
