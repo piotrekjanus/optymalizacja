@@ -205,12 +205,12 @@ def lars(x, y, alg_type = "lars", verbose=False):
         # MSE = np.sum((res - x.dot(beta_))**2)/len(res)
         # mu_a = mu_a_plus
         # beta = beta_new
-        history["mse"] = history["mse"] + [MSE]
-        history["beta"] = history["beta"] + [beta] 
-        history["gamma"] = history["gamma"] + [gamma]
-        history["gamma_tilde"] = history["gamma_tilde"] + [gamma]
-        history["Aa"] = history["Aa"] + [Aa]
-        history["c_max"] = history["c_max"] + [c_max]
+        history["mse"] += [MSE]
+        history["beta"] += [beta] 
+        history["gamma"] += [gamma]
+        history["gamma_tilde"] += [gamma]
+        history["Aa"] += [Aa]
+        history["c_max"] += [c_max]
         history["inactive_set"] = [inactive_set]
         history["ignored_set"] = [ignored_set]
 
