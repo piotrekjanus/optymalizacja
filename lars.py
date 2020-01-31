@@ -18,9 +18,6 @@ def plot_path(beta_path):
         plt.axvline(x=coeff, linewidth=0.4, linestyle='--')
         plt.text(coeff-0.005*xmax, ymax,'{}'.format(i), fontsize=5)
 
-def update_save(history):
-    #TODO
-    pass
 
 def check_stop_criterions(params):
     force_stop = False

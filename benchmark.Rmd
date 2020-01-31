@@ -64,7 +64,7 @@ plt.subplot(1, 2, 2)
 plot_path(r.object)
 ```
 
-```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 1: Zmiana parametrów $\\beta$ w zależności od iteracji. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 1: Zmiana parametrów $\\beta$ w zależności od iteracji. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 
 plt.show()
 ```
@@ -127,7 +127,7 @@ object <- lars(x, y, "lasso")$beta
 
 ```
 
-```{python, include = FALSE, echo=FALSE, message=FALSE, info =FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 2: Zmiana parametrów  w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python, include = FALSE, echo=FALSE, message=FALSE, info =FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 2: Zmiana parametrów  w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 x, y = load_diabetes(return_X_y = True)
 y = y.reshape((-1,1))
 plt.style.use('ggplot')
@@ -141,7 +141,7 @@ plot_path(r.object)
 
 ```
 
-```{python echo=FALSE, message=FALSE, info =FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 2: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python echo=FALSE, message=FALSE, info =FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 2: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 plt.show()
 ```
 Jak wynika z Tabeli 4, w której możemy obserwować dokładne wartości parametrów modelu, zmienną, która została wyrzucona ze zbioru aktywnego, jest **HDL**, odpowiadająca za poziom cholesterolu u pacjenta. 
@@ -210,7 +210,7 @@ plt.subplot(1, 2, 2)
 plot_path(r.val)
 ```
 
-```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 3: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LARS. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 plt.show()
 
 ```
@@ -288,7 +288,7 @@ plt.subplot(1, 2, 2)
 plot_path(r.val)
 ```
 
-```{python, echo=FALSE, fig.align="center", fig.width=11, fig.cap="Rysunek 5: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python, echo=FALSE, fig.align="center", fig.width=11, fig.cap="Rysunek 5: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 plt.show()
 
 ```
@@ -298,7 +298,7 @@ Porównanie parametrów obu modeli stworzonych przy pomocy alorytmu LARS i jego 
 ```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 6: Wartości parametrów otrzymanego modelu regresji"}
 beta_LARS <- beta_r %>% mutate(Algorytm = "LARS") %>% select(-Implementacja)
 beta_lasso <- py$beta_path_
-beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
+beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "LASSO")
 names(beta_lasso) <- names(beta_LARS)
 beta <- rbind(beta_LARS, beta_lasso)
 
@@ -386,7 +386,7 @@ plt.subplot(1, 2, 2)
 plot_path(r.val)
 ```
 
-```{python echo=FALSE, fig.align="center", fig.width=12, fig.cap="Rysunek 8: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python echo=FALSE, fig.align="center", fig.width=12, fig.cap="Rysunek 8: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LARS. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 plt.show()
 ```
 
@@ -424,7 +424,7 @@ ggplot(c, aes(x = x, y = val, col = Implementacja)) +
   ylab("MSE")
 ```
 
-Analiza wykresu zmiany błędu średniokwadratowego dla kolejnych iteracji pokazuje, że poczatkowo dopasowywanie modelu przebiegało podobnie, następnie około 30 iteracji, występuje rozbieżność. Wartym uwagi jest fakty, że dla naszego modelu w Pythonie końcowa wartość MSE jest niemal identyczna jak ta uzyskana funkcją w R, jednak nasz model zawiera 12 zmiennych mniej, co jest bardzo ważne z punktu widzenia generalizacji rozwiązania.
+Analiza wykresu zmiany błędu średniokwadratowego dla kolejnych iteracji pokazuje, że poczatkowo dopasowywanie modelu przebiegało podobnie, następnie około 30 iteracji, występuje rozbieżność. Wartym uwagi jest fakty, że dla naszego modelu w Pythonie końcowa wartość MSE jest niemal identyczna jak ta uzyskana funkcją w R, jednak nasz model zawiera 10 zmiennych mniej, co jest bardzo ważne z punktu widzenia generalizacji rozwiązania.
 
 **Porównanie czasu wykonania**
 
@@ -469,7 +469,7 @@ plt.subplot(1, 2, 2)
 plot_path(r.val_)
 ```
 
-```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 11: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku R, po prawej w Pythonie"}
+```{python, echo=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 11: Zmiana parametrów $\\beta$ w zależności od iteracji w modelu LASSO. Po lewej wyniki uzyskane z implementacji w języku Python, po prawej w R"}
 
 plt.show()
 ```
@@ -478,7 +478,7 @@ Tym razem końcowym rezultatem w obu przypadkach jest model, zawierający te sam
 ```{r, echo=FALSE, warning=FALSE, error=FALSE, fig.align="center", fig.width=12, fig.height=6, fig.cap="Rysunek 12: Wartości parametrów otrzymanego modelu regresji"}
 beta_LARS <- beta_py %>% mutate(Algorytm = "LARS") %>% select(-Implementacja)
 beta_lasso <- py$beta_path_
-beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "lasso")
+beta_lasso <- beta_lasso[nrow(beta_lasso),] %>% t() %>% data.frame(val = .) %>% mutate(var = beta_r$var, Algorytm = "LASSO")
 names(beta_lasso) <- names(beta_LARS)
 beta <- rbind(beta_LARS, beta_lasso)
 
