@@ -11,7 +11,7 @@ eps = 1e-5
 
 def plot_path(beta_path):
     sum_abs_coeff = np.sum(np.abs(beta_path), 1)
-    # plt.figure(figsize=(6, 6))kkkkj
+    plt.figure(figsize=(6, 6))
     plt.plot(sum_abs_coeff, beta_path)
     _, xmax, _, ymax = plt.axis()
     for i,coeff in enumerate(sum_abs_coeff):
@@ -225,17 +225,11 @@ def lars(x, y, alg_type = "lars", verbose=False):
     return np.squeeze(d), history
         
 if __name__ == "__main__":
-    # x, y = load_diabetes(return_X_y = True)
-    # scaler = StandardScaler().fit(x)
-    # x = scaler.transform(x)
-    # y = y.reshape((-1,1))
-    # y = StandardScaler().fit_transform(y)
-    data = pd.read_csv("train.csv")
-    print(data.shape)
-    x = data.iloc[:,0:82].to_numpy()
-    y  = data.critical_temp.to_numpy()
+    x, y = load_diabetes(return_X_y = True)
     y = y.reshape((-1,1))
-    beta_path = lars(x, y, 'lars') 
+    beta_path,_ = lars(x, y, 'lars') 
     plot_path(beta_path)
-    # beta_path = lars(x, y, 'lasso')
-    # plot_path(beta_path)
+    plt.show()
+    beta_path,_ = lars(x, y, 'lasso')
+    plot_path(beta_path)
+    plt.show()
